@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<commands>
+    <fichiers>
+        <ouvrir>
+        </ouvrir>
+        <command label="Enregistrer">
+            <function>save_file</function>
+        </command>
+        <command label="Enregistrer sous">
+            <function>save_file_as</function>
+        </command>
+        <command label="Fermer">
+            <function>close_file</function>
+        </command>
+        <command label="Propriétés">
+            <function>show_properties</function>
+        </command>
+    </fichiers>
+</commands>

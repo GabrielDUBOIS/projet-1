@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<structures>
+    <bar label="Barre de menus principale" type="menu">
+        <options relief="GROOVE" padx="5" width='500' height='150'/>
+        <pack side="TOP" />
+        <item label="Fichiers" type="menu">
+            <options underline="0" relief="GROOVE" 
+            background="#372E78" borderwidth="2" width="15" />
+            <pack side="LEFT" />
+        </item>
+        <item label="Édition" type="menu">
+            <options underline="0" relief="SUNKEN" 
+            background="#37379C" borderwidth="2" width="15" />
+            <pack side="LEFT" />
+        </item>
+        <item label="Affichage" type="menu">
+            <options underline="0" relief="SUNKEN" 
+            background="#3630CC" borderwidth="2" width="15" />
+            <pack side="LEFT" />
+        </item>
+        <item label="Outils" type="menu">
+            <options underline="0" relief="GROOVE" 
+            background="#2638DC" borderwidth="2" width="15" />
+            <pack side="RIGHT" />
+        </item>
+    </bar>
+    <menu label="Fichiers">
+        <options relief="GROOVE" 
+            background="#E9A64D" borderwidth="2" />
+        <item label="Ouvrir" type="menu">
+        </item>
+        <item label="Enregistrer" type="command">
+            <command value="save_file" />
+        </item>
+        <item label="Enregistrer sous" type="command">
+            <command value="save_file_as" />
+        </item>
+        <item label="Fermer" type="command">
+            <command value="close_file" />
+        </item>
+        <item label ="Propriétés" type="command">
+            <command value="show_properties_file" />
+        </item>
+    </menu>
+    <menu label="Édition">
+        <options background="#1E90FF" />
+    </menu>
+    <menu label="Affichage">
+        <options background="#1E90FF" />
+    </menu>
+    <menu label="Outils">
+        <options background="#1E90FF" />
+    </menu>
+    <menu label="Ouvrir">
+        <options background="#89DD7E"/>
+        <item label="Texte" type="menu">
+            <options background="#1E90FF"/>
+        </item>
+        <item label="CSV" type="command">
+            <command value="open_csv" />
+        </item>
+        <item label="Html" type="command">
+            <command value="open_html" />
+        </item>
+        <item label="SGDB" type="command">
+            <command value="open_sgdb" />
+        </item>
+    </menu>
+    <menu label="Texte">
+        <options background="#63EEB0" />
+        <item label="UTF8" type="command">
+            <command value="open_txt_utf8" />
+        </item>
+        <item label="Latin9" type="command">
+            <command value="open_txt_latin9" />
+        </item>
+    </menu>
+</structures>
+
