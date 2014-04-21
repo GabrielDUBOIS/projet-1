@@ -52,7 +52,7 @@ class DB:
 
     @connection.setter
     def connection(self, connection):
-        if type(connection) == pg._psycopg.connection:
+        if type(connection) == pg._psycopg.connection:  # @UndefinedVariable
             self._connection = connection
         else:
             raise TypeError('Erreur de tye : type %s fourni en argument'
@@ -66,7 +66,7 @@ class DB:
 
     @cursor.setter
     def cursor(self, cursor):
-        if type(cursor) == pg._psycopg.cursor:
+        if type(cursor) == pg._psycopg.cursor:  # @UndefinedVariable
             self._cursor = cursor
         else:
             raise TypeError('Erreur de type : type %s fourni en argument'
