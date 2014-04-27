@@ -1,15 +1,15 @@
 # -*- coding: Utf-8 -*-
 
 ### Importations des modules de la bibliotheque standard
-import psycopg2 as pg  # @UnresolvedImport
+import psycopg2 as pg
 import abc
 
 ### Déclaration des constantes de module
-DB_NAME = 'hardview'
-DB_USER = 'gabriel'
-DB_PWD = 'XXXX'
-DB_HOST = 'localhost'
-DB_PORT = '5433'
+DB_NAME = 'db_dev'
+DB_USER = 'god'
+DB_PWD = 'azerty123'
+DB_HOST = '192.168.0.16'
+DB_PORT = '5432'
 DEFAULT_SCHEMA = 'public'
 DEBUG = False
 
@@ -391,12 +391,12 @@ if __name__ == '__main__':
             'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
             ('Disque dur 5', 30971820, 5494087)]}]
 
-    for arg in ('test', 'public'):
+    for arg in ('public', 'test'):
         db.schema = arg
         oTable = db.get_table_byname('tb_hosts')
         oTable.delete_all_records_table(True)
 
-    for arg in ('test', 'public'):
+    for arg in ('public', 'test'):
         db.schema = arg
         db.recieve_data(data)
         db.insert_data()
