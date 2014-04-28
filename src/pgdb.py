@@ -23,7 +23,8 @@ class DB:
     def __init__(self):
         self.__release()
         if DEBUG:
-            print('Initialisation de la classe %s' % self.__class__.__name__)
+            print('Initialisation de la classe %s' %
+            self.__class__.__name__)
 
     def __release(self):
         self._connectStr = None
@@ -75,7 +76,8 @@ class DB:
 
 class HardView(DB):
 
-    __slots__ = ['vmProperties', '_schema', '_tablesRecords', '_tablesObjects']
+    __slots__ = ['vmProperties', '_schema', '_tablesRecords',
+                 '_tablesObjects']
 
     _class_assoc = {}  # Foward prototypage completion
 
@@ -89,11 +91,17 @@ class HardView(DB):
     def __release(self):
         self._tablesObjects = {}
         self._tablesRecords = {}
-        self.schema = 'public'
 
     ## Méthodes d'instances
     def recieve_data(self, vmProperties):
-        """Réception, découpage et distribution des données."""
+        """
+        Cette fonction reçoit les données globales (vmProperties) concernant
+        les machines virtuelles (vm), les différencie selon des méthodes
+        propres à chacune des tables destinatrices référencées dans le diction-
+        naire d'association des tables (_class_assoc) avec leur classe respec-
+        tive et,les stocke dans un dictionnaire (_tablesRecords) en attendant
+        leur traitement.
+        """
         if DEBUG:
             print('Réception des données par la classe %s' %
             self.__class__.__name__)
@@ -101,7 +109,7 @@ class HardView(DB):
             if not aTable == 'order':
                 oTable = self._tablesObjects[aTable]
                 if DEBUG:
-                    print('Distribution des données pour la classe %s' % \
+                    print('Distribution des données pour la classe %s' %
                     oTable.__class__.__name__)
                 if aTable == 'tb_hosts':
                     properties = vmProperties
@@ -113,11 +121,16 @@ class HardView(DB):
                     oTable.recieve_data(properties)
 
     def insert_data(self, withCommit=True):
-        """Insertion des données dans chacune des tables déclarées."""
+        """
+        Cette fonction ordonne à chaque instance de table d'effectuer selon
+        leurs comportements propres, l'insertion et/ou la mise à jour
+        respectives des enregistrements des tables de la base de données.
+        """
         for aTable in self._class_assoc['order']:
             if self._tablesRecords[aTable]:
                 if DEBUG:
-                    print('Insertion des données dans la table %s' % aTable)
+                    print('Insertion des données dans la table %s' %
+                          aTable)
                 self._tablesObjects[aTable].insert_data(withCommit)
 
     def get_table_byname(self, aTable):
@@ -159,13 +172,16 @@ class HardView(DB):
         """Initialisation en cascade des variables d'instance schema pour
         toutes les tables déclarées."""
         self._schema = arg
+        self.__release()
         for aTable, cTable in self._class_assoc.items():
             if not aTable == 'order':
                 oTable = cTable()
                 if DEBUG:
                     print('Ajout du couple {%s:%s}'
-                    ' au dictionnaire _tablesObjects' % (aTable, str(oTable)))
+                          ' au dictionnaire _tablesObjects' %
+                    (aTable, str(oTable)))
                 oTable.schema = arg
+                oTable.connection = self.connection
                 if DEBUG:
                     print('Nom du schema %s' % oTable.schema)
                 self._tablesObjects[aTable] = oTable
@@ -173,31 +189,33 @@ class HardView(DB):
 
 class Table(metaclass=abc.ABCMeta):
 
-    __slots__ = ['records', '_fields', '_fieldsAssoc', '_schema', '_strSql',
-                 '_dbManager', '_cursor', '_connection']
-    __slots__ = ['records', '_fields', '_fieldsAssoc', '_schema', '_strSql']
+    __slots__ = ['records', '_fields', '_fieldsAssoc', '_schema',
+                 '_strInsSql', '_cursor', '_connection',
+                 '_update_records', '_updateKeys', '_insert_records',
+                 '_lost_records']
+
     fieldsName = ()
     fieldsType = ()
+    modes = {'insert': ()}
     _injected_references = ()
-    """
-    _dbManager = None
-    _cursor = None
-    _connection = None
-    """
-    def __init__(self, dbManager=None):
+
+    def __init__(self, connection=None):
         if DEBUG:
-            print('Initialisation de la classe %s' % self.__class__.__name__)
-        self.dbManager = dbManager
+            print('Initialisation de la classe %s' %
+                  self.__class__.__name__)
         self.__release()
+        self._connection = connection
 
     def __release(self):
         self.records = ()  # stockage des records ((a,b,c,d),...)
+        self._insert_records = ()
+        self._update_records = ()
+        self._lost_records = ()
         self._fields = {}
         self._fieldsAssoc = {}
         # self.schema = 'public'
-        self._strSql = ''
+        self._strInsSql = ''
         self._cursor = None
-        self._connection = None
 
     ## Méthodes d'instance
     def recieve_data(self, data):
@@ -208,18 +226,13 @@ class Table(metaclass=abc.ABCMeta):
         self.records = ()
         for record in data:
             if DEBUG:
-                print('Ajout pour la table %s de l\'enregistrement %s ' %
-                (self.name, record))
+                print('Ajout pour la table %s de l\'enregistrement %s '
+                      % (self.name, record))
             values = ()
             for field in self.fieldsName:
                 fType = self.fields[field]
                 fieldValue = record[self.fieldsAssoc[field]]
                 if type(fieldValue) == fType:
-                    """
-                    # Non implémentée actuellement
-                    if field in self._injected_references:
-                        self._injected_references[field] += (fieldValue,)
-                    """
                     values += (fieldValue,)
                 else:
                     raise TypeError('Erreur de type :\n'
@@ -228,16 +241,46 @@ class Table(metaclass=abc.ABCMeta):
                                     (field, fType, fieldValue,
                                     type(fieldValue)))
             self.records += (values,)
+        self.distribute_record()
         return self.records
 
     def insert_data(self, withCommit=True):
         if DEBUG:
             print('Shema %s. Exécution de l\'instruction SQL : %s' % \
             (self.schema, self.sqlInsertInstruction))
-        self.cursor.execute(self.sqlInsertInstruction)
+        if self.sqlInsertInstruction:
+            self.cursor.execute(self.sqlInsertInstruction)
+        if self._update_records:
+            self.update_data()
         if withCommit:
             self.connection.commit()
         self.sqlInsertInstruction = ''
+
+    def update_data(self, withCommit=True):
+        for record in self._update_records:
+            setValues = ("{0} = '{1}'".format(field, value) for field, value
+                          in dict(zip(self.fieldsName, record)).items()
+                          if not field == self.modes['update'])
+            strSetValues = str(tuple(setValues))[1:-1].replace('"', '')
+            # récupération de l'indexe de la clé d'update
+            index = self.fieldsName.index(self.modes['update'])
+            sqlUpdInstruction = "UPDATE {0}.{1} SET {2} WHERE {3} = {4};" \
+                                .format(self.schema, self.name, strSetValues,
+                                        self.modes['update'], record[index])
+            self.cursor.execute(sqlUpdInstruction)
+
+    def distribute_record(self):
+        if 'update' in self.modes.keys():
+            for record in self.records:
+                    index = self.fieldsName.index(self.modes['update'])
+                    if not (record[index] in self.updateKeys):
+                        self._insert_records += (record,)
+                    elif not (record in self._update_records):
+                        self._update_records += (record,)
+                    else:
+                        self._lost_records += (record,)
+        else:
+            self._insert_records = self.records
 
     def close_connection(self):
         self._cursor = None
@@ -264,24 +307,14 @@ class Table(metaclass=abc.ABCMeta):
         self._schema = arg
 
     @property
-    def dbManager(self):
-        if not self._dbManager:
-            self._dbManager = DB()
-        return self._dbManager
-
-    @dbManager.setter
-    def dbManager(self, dbManager):
-        self._dbManager = dbManager
-
-    @property
     def cursor(self):
         if not self._cursor:
-            self._cursor = self.dbManager.cursor
+            self._cursor = self.connection.cursor()
         return self._cursor
 
     @cursor.setter
     def cursor(self, arg):
-        pass
+        self._cursor = arg
 
     @property
     def connection(self):
@@ -306,7 +339,8 @@ class Table(metaclass=abc.ABCMeta):
     @property
     def fieldsAssoc(self):
         if not self._fieldsAssoc:
-            self._fieldsAssoc = dict(zip(self.fieldsName, self.vPropsName))
+            self._fieldsAssoc = dict(zip(self.fieldsName,
+                                         self.vPropsName))
         return self._fieldsAssoc
 
     @fieldsAssoc.setter
@@ -315,31 +349,48 @@ class Table(metaclass=abc.ABCMeta):
 
     @property
     def sqlInsertInstruction(self):
-        if not self._strSql:
-            strValues = str(self.records)[1:-1]
+        if self._insert_records and not self._strInsSql:
+            strValues = str(self._insert_records)[1:-1]
+            strValues = strValues.strip(',')
             strFields = str(self.fieldsName). \
             replace('\'', '')
-            self._strSql = "INSERT INTO {0}.{1} {2} VALUES {3};". \
+            self._strInsSql = "INSERT INTO {0}.{1} {2} VALUES {3};". \
             format(self.schema, self.name, strFields, strValues)
-        return self._strSql
+        elif self._insert_records:
+            self._strInsSql = ''
+            return self.sqlInsertInstruction
+        return self._strInsSql
 
     @sqlInsertInstruction.setter
     def sqlInsertInstruction(self, strSql):
-        self._strSql = strSql
+        self._strInsSql = strSql
+
+    @property
+    def updateKeys(self):
+        #print('Propriétés mor_key')
+        if not self._updateKeys:
+            self.cursor.execute('SELECT mor FROM {0}.{1};'.
+                                format(self.schema, self.name))
+            self._updateKeys = tuple(a[0] for a in self.cursor.fetchall())
+        return self._updateKeys
+
+    @updateKeys.setter
+    def updateKeys(self, arg):
+        self._updateKeys = arg
 
 
 class TbHosts(Table):
 
     name = 'tb_hosts'
-
     fieldsName = ('os', 'mor', 'hostname', 'name', 'cpu', 'memory')
-    vPropsName = ('guest_id', 'mor', 'hostname', 'name', 'cpu', 'memory_mb')
+    vPropsName = ('guest_id', 'mor', 'hostname', 'name', 'cpu',
+                  'memory_mb')
     fieldsType = (str, int, str, str, int, int)
-
-    # _injected_references = {'mor':()}
+    modes = {'insert': '', 'update': 'mor'}
 
     def __init__(self, dbManager=None):
         Table.__init__(self, dbManager)
+        self._updateKeys = None
 
 
 class TbDevs(Table):
@@ -357,6 +408,7 @@ class TbDevs(Table):
 
     ## Méthodes d'instance
     def get_dict_properties(self, vmProperties):
+        """Retourner les dictionnaires des valeurs associées aux propriétés."""
         properties = ()
         for aVmProperties in vmProperties:
             propsName = tuple((self.fieldsAssoc[field] \
@@ -366,47 +418,54 @@ class TbDevs(Table):
                 for record in data:
                     record += (aVmProperties['mor'],)
                     properties += (dict(zip(propsName, record)),)
-
         return properties
 
 ### Déclaration / Peuplage par prototypage
+
 HardView._class_assoc = \
     {'tb_hosts': TbHosts, 'tb_devs': TbDevs,
     'order': ('tb_hosts', 'tb_devs')}
-
 
 if __name__ == '__main__':
 
     db = HardView()
 
-    data = [{'guest_id': 'ubu64', 'mor': 45632, 'os': 'ubu',
-            'name': 'titi', 'hostname': 'ubutiti', 'cpu': 2,
-            'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
-            {'guest_id': 'ubu64', 'mor': 1254, 'os': 'ubu',
-              'name': 'toto', 'hostname': 'ubutoto', 'cpu': 2,
+    data = [{'guest_id': 'ubu64', 'mor': 45632,
+            'name': 'tititi', 'hostname': 'ubutiti', 'cpu': 2,
+            'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'ubu64', 'mor': 1254,
+            'name': 'tototo', 'hostname': 'ubutoto', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
             ('Disque dur 3', 30971820, 5494087)]},
-            {'guest_id': 'ubu64', 'mor': 5847, 'os': 'ubu',
+            {'guest_id': 'ubu64', 'mor': 5847,
             'name': 'tata', 'hostname': 'ubutata', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
-            ('Disque dur 5', 30971820, 5494087)]}]
+            ('Disque dur 5', 30971820, 5494087)]},
+            {'guest_id': 'ubu64', 'mor': 47732,
+            'name': 'tutotu', 'hostname': 'ubututu', 'cpu': 2,
+            'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'ubu32', 'mor': 47799,
+            'name': 'tutytu', 'hostname': 'ubutytu', 'cpu': 2,
+            'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'ubu64', 'mor': 472229,
+            'name': 'tutrrrtu', 'hostname': 'ubuyotou', 'cpu': 2,
+            'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'W732', 'mor': 411129,
+            'name': 'zszsezdeu', 'hostname': 'ezlfjezklje', 'cpu': 2,
+            'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]}]
 
-    for arg in ('public', 'test'):
+    for arg in ('test', 'public'):
         db.schema = arg
         oTable = db.get_table_byname('tb_hosts')
         oTable.delete_all_records_table(True)
 
-    for arg in ('public', 'test'):
+    for arg in ('test', 'public'):
         db.schema = arg
         db.recieve_data(data)
         db.insert_data()
-    db.close_connection()
-    """
-    for arg in ('test', 'public'):
-        db.schema=arg
-        oTable = db.get_table_byname('tb_hosts')
-        oTable.delete_all_records_table(True)
-        oTable.connection.close()
-    """
+
     print(db.get_table_name_list())
     print(db.get_table_records_byname('tb_hosts'))
+    oTable = db.get_table_byname('tb_hosts')
+    print(oTable.updateKeys)
+    db.close_connection()
