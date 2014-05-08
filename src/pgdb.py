@@ -111,10 +111,13 @@ class HardView(DB):
                 if DEBUG:
                     print('Distribution des données pour la classe %s' %
                     oTable.__class__.__name__)
+                """
                 if aTable == 'tb_hosts':
                     properties = vmProperties
                 elif aTable == 'tb_devs':
                     properties = oTable.get_dict_properties(vmProperties)
+                """
+                properties = oTable.get_dict_properties(vmProperties)
 
                 if properties:
                     self._tablesRecords[aTable] = \
@@ -378,6 +381,10 @@ class Table(metaclass=abc.ABCMeta):
     def updateKeys(self, arg):
         self._updateKeys = arg
 
+    @abc.abstractmethod
+    def get_dict_properties(self, vmProperties):
+        return
+
 
 class TbHosts(Table):
 
@@ -391,6 +398,11 @@ class TbHosts(Table):
     def __init__(self, dbManager=None):
         Table.__init__(self, dbManager)
         self._updateKeys = None
+
+    ## Méthodes d'instance
+    def get_dict_properties(self, vmProperties):
+        properties = vmProperties
+        return properties
 
 
 class TbDevs(Table):
