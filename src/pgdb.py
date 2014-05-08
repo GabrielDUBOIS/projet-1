@@ -193,7 +193,7 @@ class HardView(DB):
 class Table(metaclass=abc.ABCMeta):
 
     __slots__ = ['records', '_fields', '_fieldsAssoc', '_schema',
-                 '_strInsSql', '_cursor', '_connection',
+                 '_strInsSql', '_cursor', '_connection', '_dbManager',
                  '_update_records', '_updateKeys', '_insert_records',
                  '_lost_records']
 
@@ -274,13 +274,14 @@ class Table(metaclass=abc.ABCMeta):
 
     def distribute_record(self):
         if 'update' in self.modes.keys():
+            index = self.fieldsName.index(self.modes['update'])
             for record in self.records:
-                    index = self.fieldsName.index(self.modes['update'])
                     if not (record[index] in self.updateKeys):
                         self._insert_records += (record,)
                     elif not (record in self._update_records):
                         self._update_records += (record,)
-                    else:
+                    elif not (record in self._update_records + \
+                              self._insert_records):
                         self._lost_records += (record,)
         else:
             self._insert_records = self.records
@@ -328,6 +329,16 @@ class Table(metaclass=abc.ABCMeta):
     @connection.setter
     def connection(self, arg):
         self._connection = arg
+
+    @property
+    def dbManager(self):
+        if not self._dbManager:
+            self._dbManager = DB()
+        return self._dbManager
+
+    @dbManager.setter
+    def dbManager(self, arg):
+        self._dbManager = arg
 
     @property
     def fields(self):
@@ -396,7 +407,8 @@ class TbHosts(Table):
     modes = {'insert': '', 'update': 'mor'}
 
     def __init__(self, dbManager=None):
-        Table.__init__(self, dbManager)
+        self.dbManager = dbManager
+        Table.__init__(self, self.dbManager.connection)
         self._updateKeys = None
 
     ## Méthodes d'instance
@@ -416,7 +428,8 @@ class TbDevs(Table):
     # _injected_references = {}
 
     def __init__(self, dbManager=None):
-        Table.__init__(self, dbManager)
+        self.dbManager = dbManager
+        Table.__init__(self, self.dbManager.connection)
 
     ## Méthodes d'instance
     def get_dict_properties(self, vmProperties):

@@ -86,27 +86,27 @@ class A2HardViewTestCase(unittest.TestCase):
         cls.connection = cls.dbManager.connection
         cls.cursor = cls.dbManager.cursor
         cls.data = \
-            [{'guest_id': 'ubu64', 'mor': 45632, 'os': 'ubu',
+            [{'guest_id': 'ubu64', 'mor': 45632,
             'name': 'tititi', 'hostname': 'ubutiti', 'cpu': 2,
             'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
-            {'guest_id': 'ubu64', 'mor': 1254, 'os': 'ubu',
+            {'guest_id': 'ubu64', 'mor': 1254,
             'name': 'tototo', 'hostname': 'ubutoto', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
             ('Disque dur 3', 30971820, 5494087)]},
-            {'guest_id': 'ubu64', 'mor': 5847, 'os': 'ubu',
+            {'guest_id': 'ubu64', 'mor': 5847,
             'name': 'tata', 'hostname': 'ubutata', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
             ('Disque dur 5', 30971820, 5494087)]},
-            {'guest_id': 'ubu64', 'mor': 47732, 'os': 'ubu',
+            {'guest_id': 'ubu64', 'mor': 47732,
             'name': 'tutotu', 'hostname': 'ubututu', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
-            {'guest_id': 'ubu32', 'mor': 47799, 'os': 'ubu',
+            {'guest_id': 'ubu32', 'mor': 47799,
             'name': 'tutytu', 'hostname': 'ubutytu', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
-            {'guest_id': 'ubu64', 'mor': 472229, 'os': 'ubu',
+            {'guest_id': 'ubu64', 'mor': 472229,
             'name': 'tutrrrtu', 'hostname': 'ubuyotou', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
-            {'guest_id': 'W732', 'mor': 411129, 'os': 'W7',
+            {'guest_id': 'W732', 'mor': 411129,
             'name': 'zszsezdeu', 'hostname': 'ezlfjezklje', 'cpu': 2,
             'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]}]
 
@@ -174,16 +174,103 @@ class A2HardViewTestCase(unittest.TestCase):
                 self.assertEqual(self.dbManager._class_assoc[tb],
                                  self.dbManager.get_class_bytablename(tb))
 
-    @unittest.skip("Skip over the a test routine failed")
+    @unittest.skip("Skip over the test routine failed")
     def test_1G_fail(self):
         self.fail('Test d\'avortement de la routine de test')
 
 
-@unittest.skip("Skip over the entire test routine")
-class TableTestCase(unittest.TestCase):
-    pass
+class A3TableTestCase(unittest.TestCase):
 
-testList = [A1DBTestCase, A2HardViewTestCase]
+    @classmethod
+    def setUpClass(cls):
+        cls.dbManager = pgdb.DB()
+        cls.vmValueTest = ('W732', 411129, 'ezlfjezklje', 'zszsezdeu', 2, 1024)
+        cls.diskValueTest = ('Disque dur 1', 20971520, 8494080, 411129)
+        cls.assocTest = {'tb_hosts': cls.vmValueTest,
+                         'tb_devs': cls.diskValueTest}
+        cls.assocTable = {'tb_hosts': pgdb.TbHosts(cls.dbManager),
+                          'tb_devs': pgdb.TbDevs(cls.dbManager)}
+        cls.assocTable['tb_hosts'].schema = 'test'
+        cls.assocTable['tb_devs'].schema = 'test'
+
+        cls.data = \
+            [{'guest_id': 'ubu64', 'mor': 45632,
+            'name': 'tititi', 'hostname': 'ubutiti', 'cpu': 2,
+            'memory_mb':1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'ubu64', 'mor': 1254,
+            'name': 'tototo', 'hostname': 'ubutoto', 'cpu': 2,
+            'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
+            ('Disque dur 3', 30971820, 5494087)]},
+            {'guest_id': 'ubu64', 'mor': 5847,
+            'name': 'tata', 'hostname': 'ubutata', 'cpu': 2,
+            'memory_mb': 1024, 'disks': [('Disque dur 2', 30971820, 5494087),
+            ('Disque dur 5', 30971820, 5494087)]},
+            {'guest_id': 'ubu64', 'mor': 47732,
+            'name': 'tutotu', 'hostname': 'ubututu', 'cpu': 2,
+            'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'ubu32', 'mor': 47799,
+            'name': 'tutytu', 'hostname': 'ubutytu', 'cpu': 2,
+            'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'ubu64', 'mor': 472229,
+            'name': 'tutrrrtu', 'hostname': 'ubuyotou', 'cpu': 2,
+            'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]},
+            {'guest_id': 'W732', 'mor': 411129,
+            'name': 'zszsezdeu', 'hostname': 'ezlfjezklje', 'cpu': 2,
+            'memory_mb': 1024, 'disks': [('Disque dur 1', 20971520, 8494080)]}]
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.dbManager = None
+
+    def setUp(self):
+        #print(self.id())
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_1A_recieve_data(self):
+        for tb, value in self.assocTest.items():
+            data = self.assocTable[tb].get_dict_properties(self.data)
+            self.assocTable[tb].recieve_data(data)
+            with self.subTest(tb=tb):
+                self.assertIn(value, self.assocTable[tb].records)
+
+    def test_1B_distribute_record(self):
+        for tb, value in self.assocTest.items():
+            self.assocTable[tb].distribute_record()
+            records = self.assocTable[tb]._insert_records + \
+                      self.assocTable[tb]._update_records + \
+                      self.assocTable[tb]._lost_records
+            nbRecords = len(records)
+            with self.subTest(tb=tb):
+                self.assertIn(value, records)
+                self.assertEqual(nbRecords, len(self.assocTable[tb].records))
+
+    def test_1C_insert_data(self):
+        for tb, value in self.assocTest.items():
+            strFields = \
+                        str(self.assocTable[tb].fieldsName). \
+                        replace('\'', '')[1:-1]
+            strSql = \
+                     "SELECT {0} FROM {1}.{2}". \
+                     format(strFields, self.assocTable[tb].schema, tb)
+            self.assocTable[tb].cursor.execute(strSql)
+            with self.subTest(tb=tb, value=value):
+                self.assertIn(value, self.assocTable[tb].cursor.fetchall())
+
+    def test_1D_delete_all_records_table(self):
+        for tb in self.assocTest.keys():
+            self.assocTable[tb].delete_all_records_table(True)
+            strSql = \
+                     "SELECT * FROM {0}.{1}". \
+                     format(self.assocTable[tb].schema, tb)
+            self.assocTable[tb].cursor.execute(strSql)
+            with self.subTest(tb=tb):
+                self.assertEqual([], self.assocTable[tb].cursor.fetchall())
+
+
+testList = [A1DBTestCase, A2HardViewTestCase, A3TableTestCase]
 testLoad = unittest.TestLoader()
 
 caseList = []
