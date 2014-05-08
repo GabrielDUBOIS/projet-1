@@ -5,6 +5,7 @@ import unittest
 
 
 def setUpModule():
+    """test"""
     pass
 
 
